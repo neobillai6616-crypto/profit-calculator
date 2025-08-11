@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利潤計算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 30px 0;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .calculate-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .calculate-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .clear-btn {
+            background: #f39c12;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+        }
+
+        .results {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .result-value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .profit {
+            color: #27ae60;
+        }
+
+        .loss {
+            color: #e74c3c;
+        }
+
+        .margin {
+            color: #3498db;
+        }
+
+        .currency {
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>💰 利潤計算器</h1>
+        
+        <div class="input-group">
+            <label for="revenue">收入 (Revenue)</label>
+            <input type="number" id="revenue" placeholder="輸入總收入" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label for="cost">成本 (Cost)</label>
+            <input type="number" id="cost" placeholder="輸入總成本" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label for="expenses">其他費用 (Other Expenses)</label>
+            <input type="number" id="expenses" placeholder="輸入其他費用 (可選)" step="0.01">
+        </div>
+
+        <div class="button-group">
+            <button class="calculate-btn" onclick="calculateProfit()">計算利潤</button>
+            <button class="clear-btn" onclick="clearAll()">清除</button>
+        </div>
+
+        <div class="results" id="results">
+            <div class="result-item">
+                <span class="result-label">毛利潤:</span>
+                <span class="result-value profit" id="grossProfit">$0.00</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">淨利潤:</span>
+                <span class="result-value" id="netProfit">$0.00</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">毛利率:</span>
+                <span class="result-value margin" id="grossMargin">0%</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">淨利率:</span>
+                <span class="result-value margin" id="netMargin">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateProfit() {
+            // 獲取輸入值
+            const revenue = parseFloat(document.getElementById('revenue').value) || 0;
+            const cost = parseFloat(document.getElementById('cost').value) || 0;
+            const expenses = parseFloat(document.getElementById('expenses').value) || 0;
+
+            // 驗證輸入
+            if (revenue <= 0) {
+                alert('請輸入有效的收入金額');
+                return;
+            }
+
+            // 計算利潤
+            const grossProfit = revenue - cost;
+            const netProfit = grossProfit - expenses;
+            const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+            const netMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+
+            // 更新顯示
+            document.getElementById('grossProfit').textContent = formatCurrency(grossProfit);
+            document.getElementById('netProfit').textContent = formatCurrency(netProfit);
+            document.getElementById('grossMargin').textContent = grossMargin.toFixed(2) + '%';
+            document.getElementById('netMargin').textContent = netMargin.toFixed(2) + '%';
+
+            // 設置顏色
+            setResultColor('grossProfit', grossProfit);
+            setResultColor('netProfit', netProfit);
+
+            // 顯示結果
+            document.getElementById('results').classList.add('show');
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('zh-TW', {
+                style: 'currency',
+                currency: 'TWD',
+                minimumFractionDigits: 2
+            }).format(amount);
+        }
+
+        function setResultColor(elementId, value) {
+            const element = document.getElementById(elementId);
+            element.className = 'result-value ' + (value >= 0 ? 'profit' : 'loss');
+        }
+
+        function clearAll() {
+            document.getElementById('revenue').value = '';
+            document.getElementById('cost').value = '';
+            document.getElementById('expenses').value = '';
+            document.getElementById('results').classList.remove('show');
+        }
+
+        // 按 Enter 鍵計算
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                calculateProfit();
+            }
+        });
+
+        // 實時計算 (可選功能)
+        function enableRealTimeCalculation() {
+            const inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    const revenue = parseFloat(document.getElementById('revenue').value) || 0;
+                    const cost = parseFloat(document.getElementById('cost').value) || 0;
+                    
+                    if (revenue > 0 && cost >= 0) {
+                        calculateProfit();
+                    }
+                });
+            });
+        }
+
+        // 取消註釋下面這行來啟用實時計算
+        // enableRealTimeCalculation();
+    </script>
+</body>
+</html>
