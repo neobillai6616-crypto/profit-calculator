@@ -3,281 +3,874 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>利潤計算器</title>
+    <title>Amazon Deal Fee 利潤計算器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+        .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
         }
-
-        .calculator {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.9);
         }
-
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: bold;
-        }
-
-        input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input[type="number"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin: 30px 0;
-        }
-
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .calculate-btn {
+        .slider-thumb::-webkit-slider-thumb {
+            appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
             background: #667eea;
-            color: white;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
-
-        .calculate-btn:hover {
-            background: #5a6fd8;
-            transform: translateY(-2px);
-        }
-
-        .clear-btn {
-            background: #f39c12;
-            color: white;
-        }
-
-        .clear-btn:hover {
-            background: #e67e22;
-            transform: translateY(-2px);
-        }
-
-        .results {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .results.show {
-            display: block;
-            animation: fadeIn 0.5s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .result-item:last-child {
-            border-bottom: none;
-        }
-
-        .result-label {
-            font-weight: bold;
-            color: #333;
-        }
-
-        .result-value {
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-
-        .profit {
-            color: #27ae60;
-        }
-
-        .loss {
-            color: #e74c3c;
-        }
-
-        .margin {
-            color: #3498db;
-        }
-
-        .currency {
-            font-size: 0.9em;
-            color: #666;
+        .slider-thumb::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
         }
     </style>
 </head>
-<body>
-    <div class="calculator">
-        <h1>💰 利潤計算器</h1>
-        
-        <div class="input-group">
-            <label for="revenue">收入 (Revenue)</label>
-            <input type="number" id="revenue" placeholder="輸入總收入" step="0.01">
-        </div>
-
-        <div class="input-group">
-            <label for="cost">成本 (Cost)</label>
-            <input type="number" id="cost" placeholder="輸入總成本" step="0.01">
-        </div>
-
-        <div class="input-group">
-            <label for="expenses">其他費用 (Other Expenses)</label>
-            <input type="number" id="expenses" placeholder="輸入其他費用 (可選)" step="0.01">
-        </div>
-
-        <div class="button-group">
-            <button class="calculate-btn" onclick="calculateProfit()">計算利潤</button>
-            <button class="clear-btn" onclick="clearAll()">清除</button>
-        </div>
-
-        <div class="results" id="results">
-            <div class="result-item">
-                <span class="result-label">毛利潤:</span>
-                <span class="result-value profit" id="grossProfit">$0.00</span>
-            </div>
-            <div class="result-item">
-                <span class="result-label">淨利潤:</span>
-                <span class="result-value" id="netProfit">$0.00</span>
-            </div>
-            <div class="result-item">
-                <span class="result-label">毛利率:</span>
-                <span class="result-value margin" id="grossMargin">0%</span>
-            </div>
-            <div class="result-item">
-                <span class="result-label">淨利率:</span>
-                <span class="result-value margin" id="netMargin">0%</span>
+<body class="min-h-screen gradient-bg">
+    <!-- Header -->
+    <header class="glass-effect shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-600 p-2 rounded-lg">
+                        <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">Amazon Deal Fee 利潤計算器</h1>
+                        <p class="text-sm text-gray-600">精準計算 Amazon 促銷活動的實際收益</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-600">應對 Deal Fee 漲價</p>
+                    <p class="text-xs text-gray-500">專業版利潤分析工具</p>
+                </div>
             </div>
         </div>
-    </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Input Controls -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- 基本設置 -->
+                <div class="glass-effect p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                        <svg class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        基本設置
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="currency" class="block text-sm font-medium text-gray-600 mb-2">幣別</label>
+                            <select id="currency" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="USD">USD - 美元</option>
+                                <option value="EUR">EUR - 歐元</option>
+                                <option value="GBP">GBP - 英鎊</option>
+                                <option value="JPY">JPY - 日圓</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="marketplace" class="block text-sm font-medium text-gray-600 mb-2">市場</label>
+                            <select id="marketplace" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="US">美國 (US)</option>
+                                <option value="UK">英國 (UK)</option>
+                                <option value="DE">德國 (DE)</option>
+                                <option value="JP">日本 (JP)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sessions" class="block text-sm font-medium text-gray-600 mb-2">預估月瀏覽量 (Sessions)</label>
+                            <input type="number" id="sessions" value="5000" min="0" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="selling-price" class="block text-sm font-medium text-gray-600 mb-2">正常售價</label>
+                            <input type="number" id="selling-price" value="25" min="0" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成本結構 -->
+                <div class="glass-effect p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                        <svg class="h-5 w-5 mr-2 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                        </svg>
+                        成本結構設定
+                    </h3>
+                    <div class="space-y-6">
+                        <div class="space-y-2">
+                            <label for="product-cost" class="block text-sm font-medium text-gray-600">
+                                產品採購成本: <span id="product-cost-val" class="font-bold text-blue-600">20</span>%
+                            </label>
+                            <input type="range" id="product-cost" value="20" min="0" max="100" step="1" 
+                                   class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="fba-fee" class="block text-sm font-medium text-gray-600">
+                                FBA 費用: $<span id="fba-fee-val" class="font-bold text-blue-600">5.00</span>
+                            </label>
+                            <input type="range" id="fba-fee" value="5" min="0" max="50" step="0.1" 
+                                   class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>$0</span>
+                                <span>$25</span>
+                                <span>$50</span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="tacos" class="block text-sm font-medium text-gray-600">
+                                TACOS (廣告佔總收入百分比): <span id="tacos-val" class="font-bold text-blue-600">10</span>%
+                            </label>
+                            <input type="range" id="tacos" value="10" min="0" max="50" step="0.1" 
+                                   class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>0%</span>
+                                <span>25%</span>
+                                <span>50%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="return-rate" class="block text-sm font-medium text-gray-600">
+                                退貨率: <span id="return-rate-val" class="font-bold text-blue-600">5</span>%
+                            </label>
+                            <input type="range" id="return-rate" value="5" min="0" max="50" step="0.1" 
+                                   class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>0%</span>
+                                <span>25%</span>
+                                <span>50%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 促銷活動設定 -->
+                <div class="glass-effect p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                        <svg class="h-5 w-5 mr-2 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        促銷活動設定
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="deal-type" class="block text-sm font-medium text-gray-600 mb-2">促銷活動類型</label>
+                            <select id="deal-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="none">無促銷</option>
+                                <option value="lightning-deal">秒殺 (Lightning Deal)</option>
+                                <option value="7-day-deal">7天促銷 (7-day Deal)</option>
+                                <option value="coupon">優惠券 (Coupon)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="deal-options" class="space-y-4">
+                        <!-- 動態生成的促銷選項將在這裡顯示 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Results -->
+            <div class="space-y-6">
+                <!-- 結果顯示 -->
+                <div class="glass-effect p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                        <svg class="h-5 w-5 mr-2 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        計算結果
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                            <p class="text-sm font-medium text-blue-600">預估月銷量</p>
+                            <p id="sales-volume" class="text-2xl font-bold text-blue-800">0</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                            <p class="text-sm font-medium text-green-600">月總收入</p>
+                            <p id="total-revenue" class="text-2xl font-bold text-green-800">$0.00</p>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+                            <p class="text-sm font-medium text-red-600">月總成本</p>
+                            <p id="total-cost" class="text-2xl font-bold text-red-800">$0.00</p>
+                        </div>
+                        <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-400">
+                            <p class="text-sm font-medium text-purple-600">月淨利潤</p>
+                            <p id="net-profit" class="text-2xl font-bold text-purple-800">$0.00</p>
+                        </div>
+                        <div class="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-400">
+                            <p class="text-sm font-medium text-indigo-600">利潤率</p>
+                            <p id="profit-margin" class="text-2xl font-bold text-indigo-800">0%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 策略建議 -->
+                <div class="glass-effect p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                        <svg class="h-5 w-5 mr-2 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        策略建議
+                    </h3>
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <p id="strategy-suggestion" class="text-gray-700 text-sm leading-relaxed">
+                            請調整參數以獲得策略建議...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 轉化率設定 -->
+        <div class="mt-8">
+            <div class="glass-effect p-6 rounded-xl shadow-lg">
+                <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                    <svg class="h-5 w-5 mr-2 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    轉化率設定
+                </h3>
+                <p class="text-sm text-gray-600 mb-6">請設定不同折扣比例下的預估轉化率，系統將自動插值計算中間值。</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="space-y-2">
+                        <label for="cr-0" class="block text-sm font-medium text-gray-600">
+                            0% 折扣轉化率: <span id="cr-0-val" class="font-bold text-blue-600">10</span>%
+                        </label>
+                        <input type="range" id="cr-0" value="10" min="0" max="50" step="0.1" 
+                               class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="cr-5" class="block text-sm font-medium text-gray-600">
+                            5% 折扣轉化率: <span id="cr-5-val" class="font-bold text-blue-600">11</span>%
+                        </label>
+                        <input type="range" id="cr-5" value="11" min="0" max="50" step="0.1" 
+                               class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="cr-10" class="block text-sm font-medium text-gray-600">
+                            10% 折扣轉化率: <span id="cr-10-val" class="font-bold text-blue-600">13</span>%
+                        </label>
+                        <input type="range" id="cr-10" value="13" min="0" max="50" step="0.1" 
+                               class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="cr-15" class="block text-sm font-medium text-gray-600">
+                            15% 折扣轉化率: <span id="cr-15-val" class="font-bold text-blue-600">15</span>%
+                        </label>
+                        <input type="range" id="cr-15" value="15" min="0" max="50" step="0.1" 
+                               class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="cr-20" class="block text-sm font-medium text-gray-600">
+                            20% 折扣轉化率: <span id="cr-20-val" class="font-bold text-blue-600">17</span>%
+                        </label>
+                        <input type="range" id="cr-20" value="17" min="0" max="50" step="0.1" 
+                               class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="cr-30" class="block text-sm font-medium text-gray-600">
+                            30% 折扣轉化率: <span id="cr-30-val" class="font-bold text-blue-600">22</span>%
+                        </label>
+                        <input type="range" id="cr-30" value="22" min="0" max="50" step="0.1" 
+                               class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 圖表分析 -->
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- 成本結構分析 -->
+            <div class="glass-effect p-6 rounded-xl shadow-lg">
+                <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                    <svg class="h-5 w-5 mr-2 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    成本結構分析
+                </h3>
+                <div class="chart-container">
+                    <canvas id="cost-bar-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- 折扣 vs. 銷量/利潤 模擬圖 -->
+            <div class="glass-effect p-6 rounded-xl shadow-lg">
+                <h3 class="text-xl font-bold text-gray-700 mb-4 flex items-center">
+                    <svg class="h-5 w-5 mr-2 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    折扣 vs. 銷量/利潤 模擬
+                </h3>
+                <div class="chart-container">
+                    <canvas id="simulation-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-effect mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center">
+                <p class="text-gray-600 text-sm">
+                    © 2025 Amazon Deal Fee 利潤計算器 | 專為應對 Amazon Deal Fee 漲價而設計
+                </p>
+                <p class="text-gray-500 text-xs mt-2">
+                    此工具僅供參考，實際結果可能因市場條件而異
+                </p>
+            </div>
+        </div>
+    </footer>
 
     <script>
-        function calculateProfit() {
-            // 獲取輸入值
-            const revenue = parseFloat(document.getElementById('revenue').value) || 0;
-            const cost = parseFloat(document.getElementById('cost').value) || 0;
-            const expenses = parseFloat(document.getElementById('expenses').value) || 0;
-
-            // 驗證輸入
-            if (revenue <= 0) {
-                alert('請輸入有效的收入金額');
-                return;
-            }
-
-            // 計算利潤
-            const grossProfit = revenue - cost;
-            const netProfit = grossProfit - expenses;
-            const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
-            const netMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
-
-            // 更新顯示
-            document.getElementById('grossProfit').textContent = formatCurrency(grossProfit);
-            document.getElementById('netProfit').textContent = formatCurrency(netProfit);
-            document.getElementById('grossMargin').textContent = grossMargin.toFixed(2) + '%';
-            document.getElementById('netMargin').textContent = netMargin.toFixed(2) + '%';
-
-            // 設置顏色
-            setResultColor('grossProfit', grossProfit);
-            setResultColor('netProfit', netProfit);
-
-            // 顯示結果
-            document.getElementById('results').classList.add('show');
-        }
-
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('zh-TW', {
-                style: 'currency',
-                currency: 'TWD',
-                minimumFractionDigits: 2
-            }).format(amount);
-        }
-
-        function setResultColor(elementId, value) {
-            const element = document.getElementById(elementId);
-            element.className = 'result-value ' + (value >= 0 ? 'profit' : 'loss');
-        }
-
-        function clearAll() {
-            document.getElementById('revenue').value = '';
-            document.getElementById('cost').value = '';
-            document.getElementById('expenses').value = '';
-            document.getElementById('results').classList.remove('show');
-        }
-
-        // 按 Enter 鍵計算
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                calculateProfit();
-            }
+        // 等待 DOM 和 Chart.js 載入完成
+        document.addEventListener('DOMContentLoaded', function() {
+            // 等待 Chart.js 載入
+            const waitForChart = () => {
+                if (typeof Chart !== 'undefined') {
+                    initializeCalculator();
+                } else {
+                    setTimeout(waitForChart, 100);
+                }
+            };
+            waitForChart();
         });
 
-        // 實時計算 (可選功能)
-        function enableRealTimeCalculation() {
-            const inputs = document.querySelectorAll('input[type="number"]');
-            inputs.forEach(input => {
-                input.addEventListener('input', function() {
-                    const revenue = parseFloat(document.getElementById('revenue').value) || 0;
-                    const cost = parseFloat(document.getElementById('cost').value) || 0;
-                    
-                    if (revenue > 0 && cost >= 0) {
-                        calculateProfit();
+        function initializeCalculator() {
+            // 圖表變數
+            let costBarChart, simulationChart;
+
+            // DOM 元素
+            const sessionsInput = document.getElementById('sessions');
+            const sellingPriceInput = document.getElementById('selling-price');
+            const productCostSlider = document.getElementById('product-cost');
+            const fbaFeeSlider = document.getElementById('fba-fee');
+            const tacosSlider = document.getElementById('tacos');
+            const returnRateSlider = document.getElementById('return-rate');
+            const dealTypeSelect = document.getElementById('deal-type');
+            const dealOptionsDiv = document.getElementById('deal-options');
+
+            // 值顯示元素
+            const productCostValSpan = document.getElementById('product-cost-val');
+            const fbaFeeValSpan = document.getElementById('fba-fee-val');
+            const tacosValSpan = document.getElementById('tacos-val');
+            const returnRateValSpan = document.getElementById('return-rate-val');
+
+            // 轉化率輸入元素
+            const crInputs = {
+                '0': document.getElementById('cr-0'),
+                '5': document.getElementById('cr-5'),
+                '10': document.getElementById('cr-10'),
+                '15': document.getElementById('cr-15'),
+                '20': document.getElementById('cr-20'),
+                '30': document.getElementById('cr-30')
+            };
+            const crValSpans = {
+                '0': document.getElementById('cr-0-val'),
+                '5': document.getElementById('cr-5-val'),
+                '10': document.getElementById('cr-10-val'),
+                '15': document.getElementById('cr-15-val'),
+                '20': document.getElementById('cr-20-val'),
+                '30': document.getElementById('cr-30-val')
+            };
+            const crPoints = Object.keys(crInputs).map(Number).sort((a,b)=>a-b);
+
+            // 結果顯示元素
+            const salesVolumeElem = document.getElementById('sales-volume');
+            const totalRevenueElem = document.getElementById('total-revenue');
+            const totalCostElem = document.getElementById('total-cost');
+            const netProfitElem = document.getElementById('net-profit');
+            const profitMarginElem = document.getElementById('profit-margin');
+            const strategySuggestionElem = document.getElementById('strategy-suggestion');
+
+            // 初始化滑軌值顯示
+            productCostValSpan.textContent = productCostSlider.value;
+            fbaFeeValSpan.textContent = parseFloat(fbaFeeSlider.value).toFixed(2);
+            tacosValSpan.textContent = tacosSlider.value;
+            returnRateValSpan.textContent = returnRateSlider.value;
+
+            // 初始化轉化率值顯示
+            for (const discount of crPoints) {
+                crValSpans[discount].textContent = crInputs[discount].value;
+            }
+
+            // 滑軌事件監聽器
+            productCostSlider.addEventListener('input', () => {
+                productCostValSpan.textContent = productCostSlider.value;
+                calculateProfit();
+            });
+
+            fbaFeeSlider.addEventListener('input', () => {
+                fbaFeeValSpan.textContent = parseFloat(fbaFeeSlider.value).toFixed(2);
+                calculateProfit();
+            });
+
+            tacosSlider.addEventListener('input', () => {
+                tacosValSpan.textContent = tacosSlider.value;
+                calculateProfit();
+            });
+
+            returnRateSlider.addEventListener('input', () => {
+                returnRateValSpan.textContent = returnRateSlider.value;
+                calculateProfit();
+            });
+
+            // 轉化率滑軌事件監聽器
+            for (const discount of crPoints) {
+                crInputs[discount].addEventListener('input', () => {
+                    crValSpans[discount].textContent = crInputs[discount].value;
+                    calculateProfit();
+                });
+            }
+
+            // 促銷類型變更事件
+            dealTypeSelect.addEventListener('change', () => {
+                updateDealOptions();
+                calculateProfit();
+            });
+
+            // 其他輸入事件監聽器
+            sessionsInput.addEventListener('input', calculateProfit);
+            sellingPriceInput.addEventListener('input', calculateProfit);
+
+            // 初始化圖表
+            initializeCharts();
+
+            // 初始計算
+            calculateProfit();
+
+            // 更新促銷選項
+            function updateDealOptions() {
+                dealOptionsDiv.innerHTML = '';
+                const dealType = dealTypeSelect.value;
+                let html = '';
+
+                if (dealType === 'lightning-deal' || dealType === '7-day-deal') {
+                    html = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="deal-fee" class="block text-sm font-medium text-gray-600 mb-2">活動固定費用</label>
+                                <input type="number" id="deal-fee" value="150" min="0" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="deal-discount-percentage" class="block text-sm font-medium text-gray-600">
+                                    折扣比例: <span id="deal-discount-percentage-val" class="font-bold text-blue-600">20</span>%
+                                </label>
+                                <input type="range" id="deal-discount-percentage" value="20" min="0" max="100" step="1" 
+                                       class="slider-thumb w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>0%</span>
+                                    <span>50%</span>
+                                    <span>100%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (dealType === 'coupon') {
+                    html = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="coupon-amount" class="block text-sm font-medium text-gray-600 mb-2">優惠券金額</label>
+                                <input type="number" id="coupon-amount" value="3" min="0" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label for="coupon-redemption-rate" class="block text-sm font-medium text-gray-600 mb-2">優惠券使用率 (%)</label>
+                                <input type="number" id="coupon-redemption-rate" value="5" min="0" max="100" step="0.1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label for="coupon-days" class="block text-sm font-medium text-gray-600 mb-2">活動天數</label>
+                                <input type="number" id="coupon-days" value="30" min="1" max="90" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    `;
+                }
+
+                dealOptionsDiv.innerHTML = html;
+
+                // 重新綁定事件監聽器
+                dealOptionsDiv.querySelectorAll('input, select').forEach(input => {
+                    input.addEventListener('input', calculateProfit);
+                });
+
+                // 為折扣滑軌添加值顯示更新
+                if (dealType === 'lightning-deal' || dealType === '7-day-deal') {
+                    const discountSlider = document.getElementById('deal-discount-percentage');
+                    const discountVal = document.getElementById('deal-discount-percentage-val');
+                    if (discountSlider && discountVal) {
+                        discountVal.textContent = discountSlider.value;
+                        discountSlider.addEventListener('input', () => {
+                            discountVal.textContent = discountSlider.value;
+                            calculateProfit();
+                        });
+                    }
+                }
+            }
+
+            // 初始化圖表
+            function initializeCharts() {
+                // 成本結構長條圖
+                const costBarChartCtx = document.getElementById('cost-bar-chart').getContext('2d');
+                costBarChart = new Chart(costBarChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['採購成本', 'FBA 費用', '佣金', '促銷費用', '廣告成本'],
+                        datasets: [{
+                            label: '成本百分比 (%)',
+                            data: [0, 0, 0, 0, 0],
+                            backgroundColor: ['#4299e1', '#667eea', '#805ad5', '#d53f8c', '#dd6b20'],
+                            borderRadius: 8,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        return `總成本佔比: ${tooltipItem.raw.toFixed(2)}%`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    font: { family: 'Noto Sans TC' }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: '百分比 (%)'
+                                }
+                            }
+                        }
                     }
                 });
-            });
-        }
 
-        // 取消註釋下面這行來啟用實時計算
-        // enableRealTimeCalculation();
+                // 模擬圖表
+                const simulationChartCtx = document.getElementById('simulation-chart').getContext('2d');
+                simulationChart = new Chart(simulationChartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: '預估月銷量',
+                                data: [],
+                                borderColor: '#2b6cb0',
+                                backgroundColor: 'rgba(43, 108, 176, 0.2)',
+                                yAxisID: 'y',
+                                tension: 0.2,
+                                fill: true
+                            },
+                            {
+                                label: '月淨利潤',
+                                data: [],
+                                borderColor: '#dd6b20',
+                                backgroundColor: 'rgba(221, 107, 32, 0.2)',
+                                yAxisID: 'y1',
+                                tension: 0.2,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        stacked: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            if (context.dataset.label === '月淨利潤') {
+                                                label += '$' + context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2 });
+                                            } else {
+                                                label += context.parsed.y.toLocaleString();
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: { display: true, text: '折扣比例 (%)' }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: { display: true, text: '預估月銷量' }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: { display: true, text: '月淨利潤 ($)' },
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                            },
+                        }
+                    }
+                });
+            }
+            // 線性插值函數
+            function linearInterpolation(x, x1, y1, x2, y2) {
+                if (x2 === x1) return y1;
+                return y1 + (x - x1) * (y2 - y1) / (x2 - x1);
+            }
+
+            // 主要計算函數
+            function calculateProfit() {
+                const sessions = parseFloat(sessionsInput.value) || 0;
+                const normalPrice = parseFloat(sellingPriceInput.value) || 0;
+                
+                // 產品成本現在是售價的百分比
+                const productCostPercentage = parseFloat(productCostSlider.value) / 100 || 0;
+                const productCost = normalPrice * productCostPercentage;
+
+                const fbaFee = parseFloat(fbaFeeSlider.value) || 0;
+                const tacos = parseFloat(tacosSlider.value) / 100 || 0;
+                const returnRate = parseFloat(returnRateSlider.value) / 100 || 0;
+
+                let discountPrice = normalPrice;
+                let discountPercentage = 0;
+                let promotionFixedCost = 0;
+                let promotionVariableCostPerUnit = 0;
+
+                const dealType = dealTypeSelect.value;
+                const dealFeeInput = document.getElementById('deal-fee');
+                const dealDiscountPercentageInput = document.getElementById('deal-discount-percentage');
+                const couponAmountInput = document.getElementById('coupon-amount');
+                const couponRedemptionRateInput = document.getElementById('coupon-redemption-rate');
+
+                if (dealType === 'lightning-deal' || dealType === '7-day-deal') {
+                    promotionFixedCost = parseFloat(dealFeeInput?.value) || 0;
+                    discountPercentage = parseFloat(dealDiscountPercentageInput?.value) / 100 || 0;
+                    discountPrice = normalPrice * (1 - discountPercentage);
+                } else if (dealType === 'coupon') {
+                    const couponAmount = parseFloat(couponAmountInput?.value) || 0;
+                    const redemptionRate = parseFloat(couponRedemptionRateInput?.value) / 100 || 0;
+                    promotionVariableCostPerUnit = couponAmount * redemptionRate;
+                    // 優惠券的折扣率基於優惠券金額
+                    discountPercentage = couponAmount / normalPrice;
+                }
+
+                // 使用線性插值找到轉化率
+                let conversionRate = 0;
+                const discountP = Math.round(discountPercentage * 100);
+                const crValues = {};
+                for (const discount of crPoints) {
+                    crValues[discount] = parseFloat(crInputs[discount].value);
+                }
+
+                if (discountP <= crPoints[0]) {
+                    conversionRate = crValues[crPoints[0]];
+                } else if (discountP >= crPoints[crPoints.length - 1]) {
+                    conversionRate = crValues[crPoints[crPoints.length - 1]];
+                } else {
+                    let lowerPoint = crPoints.slice().reverse().find(p => p <= discountP);
+                    let upperPoint = crPoints.find(p => p > discountP);
+                    if (lowerPoint !== undefined && upperPoint !== undefined) {
+                        const crLower = crValues[lowerPoint];
+                        const crUpper = crValues[upperPoint];
+                        conversionRate = linearInterpolation(discountP, lowerPoint, crLower, upperPoint, crUpper);
+                    }
+                }
+                conversionRate /= 100;
+
+                const salesVolume = Math.round(sessions * conversionRate);
+                
+                // 調整退貨率的銷量
+                const netSalesVolume = salesVolume * (1 - returnRate);
+                const totalRevenue = netSalesVolume * discountPrice;
+                
+                const amazonCommissionRate = 0.15; // 假設 15% 佣金
+                const commissionCost = salesVolume * discountPrice * amazonCommissionRate;
+                const adCost = totalRevenue * tacos;
+                
+                const totalVariableCost = salesVolume * (productCost + fbaFee) + commissionCost + salesVolume * promotionVariableCostPerUnit;
+                const totalFixedCost = promotionFixedCost;
+                const totalCost = totalVariableCost + totalFixedCost + adCost;
+                
+                const netProfit = totalRevenue - totalCost;
+                const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+                // 更新 UI
+                const currencySymbol = document.getElementById('currency').value === 'JPY' ? '¥' : '$';
+                
+                salesVolumeElem.textContent = salesVolume.toLocaleString();
+                totalRevenueElem.textContent = currencySymbol + totalRevenue.toFixed(2);
+                totalCostElem.textContent = currencySymbol + totalCost.toFixed(2);
+                netProfitElem.textContent = currencySymbol + netProfit.toFixed(2);
+                profitMarginElem.textContent = profitMargin.toFixed(2) + '%';
+                
+                // 更新成本結構圖表
+                const totalCostSum = productCost * salesVolume + fbaFee * salesVolume + commissionCost + promotionFixedCost + adCost;
+                if (totalCostSum > 0) {
+                    costBarChart.data.datasets[0].data = [
+                        (productCost * salesVolume / totalCostSum) * 100,
+                        (fbaFee * salesVolume / totalCostSum) * 100,
+                        (commissionCost / totalCostSum) * 100,
+                        (promotionFixedCost / totalCostSum) * 100,
+                        (adCost / totalCostSum) * 100
+                    ];
+                } else {
+                    costBarChart.data.datasets[0].data = [0, 0, 0, 0, 0];
+                }
+                costBarChart.update();
+                
+                // 運行並更新模擬圖表
+                updateSimulationChart();
+
+                // 策略建議
+                updateStrategySuggestion(profitMargin, netProfit, totalRevenue);
+            }
+
+            // 更新模擬圖表
+            function updateSimulationChart() {
+                const sessions = parseFloat(sessionsInput.value) || 0;
+                const normalPrice = parseFloat(sellingPriceInput.value) || 0;
+                const productCostPercentage = parseFloat(productCostSlider.value) / 100 || 0;
+                const fbaFee = parseFloat(fbaFeeSlider.value) || 0;
+                const tacos = parseFloat(tacosSlider.value) / 100 || 0;
+                const returnRate = parseFloat(returnRateSlider.value) / 100 || 0;
+
+                const simulationData = [];
+                const labels = [];
+
+                // 模擬折扣百分比從 0% 到 50%
+                for (let discountP = 0; discountP <= 50; discountP += 1) {
+                    labels.push(`${discountP}%`);
+
+                    // 找到此折扣百分比的轉化率
+                    let conversionRate = 0;
+                    const crValues = {};
+                    for (const discount of crPoints) {
+                        crValues[discount] = parseFloat(crInputs[discount].value);
+                    }
+                    
+                    let lowerPoint = crPoints.slice().reverse().find(p => p <= discountP);
+                    let upperPoint = crPoints.find(p => p >= discountP);
+
+                    if (lowerPoint !== undefined && upperPoint !== undefined) {
+                         const crLower = crValues[lowerPoint];
+                         const crUpper = crValues[upperPoint];
+                         conversionRate = linearInterpolation(discountP, lowerPoint, crLower, upperPoint, crUpper);
+                    } else if (discountP < crPoints[0]) {
+                         conversionRate = crValues[crPoints[0]];
+                    } else {
+                         conversionRate = crValues[crPoints[crPoints.length - 1]];
+                    }
+
+                    conversionRate /= 100;
+                    
+                    const discountPrice = normalPrice * (1 - discountP / 100);
+                    const salesVolume = Math.round(sessions * conversionRate);
+                    const netSalesVolume = salesVolume * (1 - returnRate);
+                    const totalRevenue = netSalesVolume * discountPrice;
+
+                    const productCost = normalPrice * productCostPercentage;
+                    const amazonCommissionRate = 0.15;
+                    const commissionCost = salesVolume * discountPrice * amazonCommissionRate;
+                    const adCost = totalRevenue * tacos;
+                    const promotionFixedCost = 0; // 假設模擬中沒有固定促銷成本
+                    const promotionVariableCostPerUnit = 0; // 假設模擬中沒有優惠券成本
+
+                    const totalVariableCost = salesVolume * (productCost + fbaFee) + commissionCost + salesVolume * promotionVariableCostPerUnit;
+                    const totalFixedCost = promotionFixedCost;
+                    const totalCost = totalVariableCost + totalFixedCost + adCost;
+                    
+                    const netProfit = totalRevenue - totalCost;
+
+                    simulationData.push({
+                        discount: discountP,
+                        sales: salesVolume,
+                        profit: netProfit
+                    });
+                }
+
+                simulationChart.data.labels = labels;
+                simulationChart.data.datasets[0].data = simulationData.map(d => d.sales);
+                simulationChart.data.datasets[1].data = simulationData.map(d => d.profit);
+                simulationChart.update();
+            }
+
+            // 更新策略建議
+            function updateStrategySuggestion(profitMargin, netProfit, totalRevenue) {
+                let suggestion = '';
+                
+                if (profitMargin > 20) {
+                    suggestion = '🎉 利潤率相當健康！可以考慮增加廣告預算或進行促銷活動來擴大市場份額。建議測試更高的 TACOS 來獲得更多曝光。';
+                } else if (profitMargin > 10) {
+                    suggestion = '⚖️ 利潤率尚可，但仍有優化空間。可以嘗試降低採購成本、優化 FBA 費用，或適度提高售價。考慮 A/B 測試不同的定價策略。';
+                } else if (profitMargin > 0) {
+                    suggestion = '⚠️ 利潤率偏低，需要謹慎管理。建議重新評估採購成本、減少不必要的促銷活動，並優化廣告投放效率。';
+                } else {
+                    suggestion = '🚨 目前處於虧損狀態！建議立即檢討成本結構，考慮提高售價、降低採購成本，或暫停高成本的促銷活動。';
+                }
+
+                // 針對 Deal Fee 漲價的特別建議
+                const dealType = dealTypeSelect.value;
+                if (dealType === 'lightning-deal' || dealType === '7-day-deal') {
+                    suggestion += '\n\n💡 Deal Fee 漲價影響：由於 Amazon Deal Fee 上漲，建議重新評估促銷活動的 ROI。考慮使用優惠券或其他成本較低的促銷方式。';
+                }
+
+                strategySuggestionElem.textContent = suggestion;
+            }
+
+            // 初始化促銷選項
+            updateDealOptions();
+        }
     </script>
 </body>
 </html>
